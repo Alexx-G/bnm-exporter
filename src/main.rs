@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use chrono::NaiveDate;
 use clap::Parser;
@@ -8,7 +8,10 @@ use futures::future::join_all;
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::StatusCode;
-use tokio::{io::{stdin, AsyncReadExt}, fs::read};
+use tokio::{
+    fs::read,
+    io::{stdin, AsyncReadExt},
+};
 
 lazy_static! {
     static ref CURRENCY_CACHE: tokio::sync::RwLock<HashMap<String, f64>> =
@@ -221,14 +224,12 @@ where
 
 async fn read_in_file(args: &OptionsParser) -> Result<Vec<u8>> {
     match args.in_file.as_ref() {
-        Some(p) => {
-            Ok(read(p).await?)
-        },
+        Some(p) => Ok(read(p).await?),
         None => {
             let mut buf = Vec::with_capacity(4096);
             stdin().read_to_end(&mut buf).await?;
             Ok(buf)
-        },
+        }
     }
 }
 
