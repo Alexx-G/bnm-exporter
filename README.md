@@ -5,6 +5,7 @@ assuming that there's a column with valid date, fetch BNM's exchange rate
 for that date and add it as a new column.
 
 There are a few options that allow to:
+- read the CSV file from STDIN;
 - change format of the in/out date;
 - change name and position of the exchange rate column;
 - filter records using regexp;
@@ -35,7 +36,17 @@ The CSV file is expected to have a "DATE" column, exchange rate is appended as t
 ./bnm-exporter -i file.csv -d DATE
 ```
 
-Same as previous one, but applies filtering (regex search) to the "DESCRIPTION" column and saves output to the specified file.
+Reads the CSV document from STDIN, rather then a file.
+
+```bash
+./bnm-exporter -d DATE <<EOF
+DATE,DESCRIPTION,AMOUNT
+01/01/2020,Some description,10
+02/30/2020,foo bar,99
+EOF
+```
+
+Reads the CSV data and applies filtering (regex search) to the "DESCRIPTION" column, saving output to the specified file.
 
 ```bash
 ./bnm-exporter -i file.csv -d DATE -f "DESCRIPTION=foo|bar[0-9]" -o out.csv

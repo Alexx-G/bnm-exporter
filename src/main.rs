@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 use chrono::NaiveDate;
 use clap::Parser;
@@ -8,6 +8,7 @@ use futures::future::join_all;
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::StatusCode;
+use tokio::{io::{stdin, AsyncReadExt}, fs::read};
 
 lazy_static! {
     static ref CURRENCY_CACHE: tokio::sync::RwLock<HashMap<String, f64>> =
@@ -20,7 +21,8 @@ struct OptionsParser {
     #[clap(long = "in-file", short = 'i', parse(from_os_str))]
     /// Path to the input file in CSV format.
     /// By default the file is expected to have headers as the first row.
-    in_file: std::path::PathBuf,
+    /// If the input file is not provided, the content will be read from STDIN.
+    in_file: Option<std::path::PathBuf>,
 
     #[clap(long = "in-no-headers")]
     /// Must be set, in case the CSV file has no headers.
@@ -217,16 +219,30 @@ where
     Ok(())
 }
 
+async fn read_in_file(args: &OptionsParser) -> Result<Vec<u8>> {
+    match args.in_file.as_ref() {
+        Some(p) => {
+            Ok(read(p).await?)
+        },
+        None => {
+            let mut buf = Vec::with_capacity(4096);
+            stdin().read_to_end(&mut buf).await?;
+            Ok(buf)
+        },
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
     env_logger::init();
     let args = OptionsParser::parse();
+    let data = read_in_file(&args).await?;
     let mut reader = csv::ReaderBuilder::new()
         .flexible(true)
         .delimiter(args.in_column_delimiter as u8)
         .has_headers(!args.in_no_headers)
-        .from_path(&args.in_file)?;
+        .from_reader(data.as_slice());
     let headers = if reader.has_headers() {
         Some(reader.headers()?.clone())
     } else {
